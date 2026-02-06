@@ -1,0 +1,6 @@
+cd src
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
+# Isso gera o módulo `core` (core.so ou core.*.so) no build tree.
+# Copia ou instale para que python possa importar (p.ex. pip install ., ou PYTHONPATH)

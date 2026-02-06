@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+requests
+feedparser
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+torch>=2.0.0 --index-url https://download.pytorch.org/whl/cu118
+numpy
+scikit-learn
+python-dotenv
+pydantic
+# --- NOVAS DEPENDÊNCIAS PARA PRODUÇÃO ---
+celery[redis]       # Gestor de Filas
+redis               # Cliente Redis
+psycopg2-binary     # Driver PostgreSQL
+httpx               # Cliente HTTP Async
+python-multipart    # Para uploads se necessário

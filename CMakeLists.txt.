@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.15)
+project(horaculo_core)
+set(CMAKE_CXX_STANDARD 17)
+find_package(pybind11 REQUIRED)
+pybind11_add_module(core core.cpp)
+set_target_properties(core PROPERTIES PREFIX "${PYTHON_MODULE_PREFIX}" SUFFIX "${PYTHON_MODULE_EXTENSION}")

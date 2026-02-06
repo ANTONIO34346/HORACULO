@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # --- 1. FRONT-FACING API (Leve, só recebe pedidos) ---
+  api:
+    build: .
+    command: uvicorn app.api:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./python:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://horaculo:securepass@db:5432/horaculo_main
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+    depends_on:
+      - redis
+      - db
+
+  # --- 2. HEAVY WORKER (GPU, C++, ML Models) ---
+  worker:
+    build: .
+    # Este container carrega o FinBERT e o Core C++
+    command: celery -A app.worker.celery worker --loglevel=info --concurrency=1
+    volumes:
+      - ./python:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://horaculo:securepass@db:5432/horaculo_main
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEWSAPI_KEY=${NEWSAPI_KEY}
+    depends_on:
+      - redis
+      - db
+      - qdrant
+
+  # --- 3. INFRAESTRUTURA ---
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: horaculo
+      POSTGRES_PASSWORD: securepass
+      POSTGRES_DB: horaculo_main
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+volumes:
+  postgres_data:
+  qdrant_data:
