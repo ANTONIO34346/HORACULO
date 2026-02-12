@@ -1,291 +1,177 @@
-# HORACULO — Detecção de Padrões em Notícias com IA
+HORACULO — Financial News Narrative Analysis Engine
+Horaculo is an open-source system for analyzing coordination, divergence, and entropy across financial news sources.
+It ingests multiple articles simultaneously and quantifies narrative alignment using embedding similarity, clustering techniques, and historical source weighting.
+The system is designed for research and quantitative experimentation.
+Overview
+Financial markets react not only to numerical data but also to narratives.
+Different outlets may:
+Emphasize different aspects of the same event
+Converge on similar framing
+Diverge significantly in interpretation
+Horaculo attempts to quantify these structural patterns using embedding-based similarity analysis.
+This project does not claim to detect intentional manipulation.
+It measures structural alignment and divergence across sources.
+Core Features
+Multi-source ingestion (NewsAPI / RSS)
+Claim-level embedding generation (HuggingFace)
+High-performance cosine similarity engine (C++ + AVX2)
+INT8 embedding quantization
+Clustering and entropy estimation
+Cross-source coordination scoring
+Rolling credibility model per source
+Structured JSON output for downstream systems
+Optional React dashboard
+Telegram alert integration
+Architecture
+Analysis Pipeline
+Copiar código
 
-> Sistema de análise em tempo real que detecta manipulação, conflitos narrativos e sinais de oportunidade em notícias financeiras.
-
-## 🎯 O Que Faz
-
-**Horaculo** analisa múltiplas fontes de notícias simultaneamente e:
-
-✅ Detecta **conflitos narrativos** (quando fontes dizem coisas contraditórias)  
-✅ Identifica **manipulação coordenada** (quando várias fontes falam a mesma coisa suspeita)  
-✅ Calcula **psicologia do mercado** (medo, euforia, armadilhas)  
-✅ Extrai **dados duros** (valores, percentuais, eventos)  
-✅ Memoriza **histórico de fontes** (qual fonte foi certa antes?)  
-✅ Gera **sinais de oportunidade** (EDEN SIGNALS)  
-
-## 🚀 Quick Start (3 minutos)
-
-### Opção 1: Docker (Recomendado)
-
-```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/horaculo.git
+NewsAPI / RSS
+    ↓
+Ingestion (text, source, timestamp)
+    ↓
+Claim Extraction
+    ↓
+Embedding Generation (HuggingFace)
+    ↓
+Deduplication (similarity threshold)
+    ↓
+C++ Similarity Engine (AVX2 + INT8)
+    ↓
+Clustering + Entropy Metrics
+    ↓
+Credibility Weighting
+    ↓
+Structured JSON Output
+C++ Core
+The similarity engine is implemented in C++ for performance-critical operations.
+Optimizations include:
+INT8 quantization (4× memory reduction)
+AVX2 SIMD vectorized cosine similarity
+PyBind11 integration with Python
+Benchmark
+~1.4s per query (10–20 sources)
+~100 queries/minute
+~150MB memory footprint (SQLite mode)
+Python-only baseline: ~12 seconds
+Current implementation is single-threaded.
+Installation
+Option 1 — Docker (Recommended)
+Bash
+Copiar código
+git clone https://github.com/your-username/horaculo.git
 cd horaculo
-
-# Suba com Docker Compose
 docker-compose up
-
-# Em outro terminal, rode a análise
+Run analysis:
+Bash
+Copiar código
 python python/run_horaculo.py --newsapi_key YOUR_KEY --query "oil OR petroleum"
-```
-
-### Opção 2: Local (Python)
-
-```bash
-# Instale dependências
+Option 2 — Local Setup
+Bash
+Copiar código
 pip install -r requirements.txt
-
-# Compile o motor C++
 python setup.py build_ext --inplace
 
-# Configure as variáveis de ambiente
-export NEWSAPI_KEY="sua_chave_aqui"
-export OPENAI_API_KEY="sua_chave_openai"  # Opcional
+export NEWSAPI_KEY="your_key"
+export OPENAI_API_KEY="optional"
 
-# Execute
 python python/run_horaculo.py --query "apple stock"
-```
-
-## 📊 Exemplo de Uso
-
-```bash
-# Análise de petróleo
-python run_horaculo.py --query "oil OR petroleum OR OPEC"
-
-# Análise com resumo OpenAI
-python run_horaculo.py --query "Federal Reserve" --use_openai --openai_key sk-xxx
-
-# Custom threshold
-python run_horaculo.py --query "gold prices" --newsapi_key xxx
-```
-
-## 📈 Output
-
-Você recebe um JSON estruturado com:
-
-```json
+Example CLI Usage
+Bash
+Copiar código
+python run_horaculo.py --query "oil OR OPEC"
+python run_horaculo.py --query "Federal Reserve" --use_openai
+python run_horaculo.py --query "gold prices"
+Example Output
+Json
+Copiar código
 {
   "verdict": {
-    "winner_source": "Reuters",
+    "dominant_source": "Reuters",
     "intensity": 0.85,
     "entropy": 1.92,
     "inconclusive": false
   },
-  "eden_signal": {
-    "detected": true,
-    "source": "Reuters",
-    "confidence": 0.92
+  "coordination": {
+    "score": 0.72,
+    "crowded": false
   },
-  "psychology": {
-    "mood": "Medo",
-    "is_trap": true,
-    "is_crowded": false,
-    "asymmetry_level": 0.67
-  },
-  "summary": "Análise estratégica em linguagem natural...",
   "hard_data": {
     "percentages": ["+12.5%", "-8.3%"],
     "monetary": ["$142.50", "$8.2B"]
-  },
-  "ui": {
-    "screen_arbitrage": {...},
-    "screen_intelligence": {...},
-    "screen_stress": {...},
-    "screen_portal": {...}
   }
 }
-```
+Source Credibility Model
+Each source maintains a rolling credibility profile:
+Json
+Copiar código
+{
+  "source": "Reuters",
+  "total_scans": 342,
+  "consensus_hits": 289,
+  "credibility_score": 0.85
+}
+Weights are dynamically adjusted based on historical agreement patterns.
+Evaluation Strategy
+Horaculo does not rely on labeled “manipulation” datasets.
+Evaluation focuses on structural consistency and reproducibility.
+1. Reproducibility Tests
+Stability of coordination score across short time windows
+Entropy drift analysis
+Cluster persistence measurement
+2. Cross-Embedding Comparison
+Run queries with different embedding models and compare:
+Cluster similarity
+Coordination variance
+Entropy stability
+3. Historical Event Backtesting
+Analyze known macro events:
+FOMC announcements
+OPEC meetings
+Earnings releases
+Measure structural changes in entropy and coordination.
+4. Synthetic Stress Testing
+Inject duplicated or paraphrased articles to validate:
+Deduplication threshold behavior
+Quantization precision
+Cluster sensitivity
+5. Performance Validation
+Compare C++ AVX2 vs Python baseline
+Measure cosine deviation under INT8 quantization
+Benchmark scaling behavior
+Environment Variables
+Copiar código
 
-## 🏗️ Arquitetura
-
-### Stack Técnico
-
-| Camada | Tecnologia | Função |
-|--------|-----------|--------|
-| **Frontend** | React + Tailwind | 5 telas de dashboard |
-| **Backend** | Python 3.9+ | Orquestração do pipeline |
-| **Motor** | C++ + AVX2 | Análise de embeddings INT8 |
-| **Persistência** | SQLite / Postgres | Memória de fontes |
-| **Infra** | Docker Compose | Deploy em 1 comando |
-
-### Pipeline de Análise
-
-```
-NewsAPI/RSS Feeds
-    ↓
-[Ingest] → Extrai texto, fonte, timestamp
-    ↓
-[Embeddings] → Vetoriza claims com HuggingFace
-    ↓
-[Dedupe] → Remove duplicatas (similarity > 0.92)
-    ↓
-[C++ Core] → Cosine similarity com AVX2 + INT8 quantização
-    ↓
-[Memory] → Atualiza perfil de credibilidade da fonte
-    ↓
-[Psychology] → Analisa sentimento + coordenação
-    ↓
-[Summary] → Gera insights com HuggingFace ou OpenAI
-    ↓
-JSON Estruturado + Alertas Telegram
-```
-
-## 🔧 Configuração
-
-### Variáveis de Ambiente
-
-```bash
-# Obrigatório
-NEWSAPI_KEY=seu_token_newsapi  # Grátis em https://newsapi.org
-
-# Opcional
-OPENAI_API_KEY=sk-xxx           # Para resumos premium
-DATABASE_URL=postgresql://...   # Postgres em produção
-TELEGRAM_BOT_TOKEN=xxx          # Para alertas
-```
-
-### Arquivos Principais
-
-```
-horaculo/
-├── python/
-│   ├── run_horaculo.py          # CLI entry point
-│   ├── orchestrator.py          # Pipeline principal
-│   ├── app/
-│   │   ├── alerts.py            # Telegram notifications
-│   │   ├── anti_manipulation.py # Detecção de coordenação
-│   │   ├── cache.py             # Redis/local cache
-│   │   ├── claim_extract.py     # NLP para claims
-│   │   ├── clustering.py        # K-means no embeddings
-│   │   ├── crypto.py            # Análise de cripto
-│   │   ├── data_extractor.py    # Extrai números e datas
-│   │   ├── dedupe.py            # Remove duplicatas
-│   │   ├── embeddings.py        # HuggingFace vectors
-│   │   ├── ingest.py            # Fetch de NewsAPI
-│   │   ├── memory.py            # SQLite/Postgres
-│   │   ├── psychology.py        # Análise psicológica
-│   │   ├── sentiment.py         # Sentiment scores
-│   │   └── summarizer.py        # Resumos com HF ou OpenAI
-│   └── requirements.txt
-├── src/
-│   └── core.cpp                 # Motor C++ com AVX2
-├── app/
-│   ├── App.js                   # React frontend
-│   ├── App.jss                  # Mobile variant
-│   └── package.json
-├── docker-compose.yml           # Deploy pronto
-└── README.md
-```
-
-## 📊 Conceitos-Chave
-
-### EDEN SIGNAL
-Detectado quando:
-- **Fonte confiável** (histórico >85% correto)
-- **Conflito baixo** (intensidade <50%)
-- **Padrão emergente** (consenso em baixa intensidade)
-
-Significa: Oportunidade detectada por observador confiável em ambiente consensual.
-
-### Entropy (Entropia)
-Mede divergência de opiniões:
-- **Baixa (<0.8):** Consenso forte (pode ser manipulação)
-- **Alta (>1.8):** Caos narrativo (informação incompleta)
-- **Ótima (0.8-1.8):** Mercado refletindo incerteza real
-
-### Coordination Score
-Mede se múltiplas fontes estão "lendo do mesmo roteiro":
-- **< 0.3:** Narrativas independentes (saudável)
-- **> 0.7:** Coordenação suspeita (bandwagon)
-
-## 🎨 Frontend
-
-### 5 Telas Disponíveis
-
-1. **Portal** — Busca e logs em tempo real
-2. **Radar Arbitrage** — Scatter plot de sentimento vs confiabilidade
-3. **Intelligence** — Clusters de narrativas + coordination score
-4. **Stress** — Psicologia do mercado (mood, traps, crowding)
-5. **Crypto** — Satélite isolado para análise de blockchain
-
-Acesse em: `http://localhost:3000`
-
-## 💻 Compilar C++
-
-```bash
-# Requer: GCC/Clang + Python dev headers
+NEWSAPI_KEY=your_newsapi_token
+OPENAI_API_KEY=optional
+DATABASE_URL=postgresql://...
+TELEGRAM_BOT_TOKEN=optional
+TELEGRAM_CHAT_ID=optional
+Build C++ Core Manually
+Bash
+Copiar código
 cd src
 g++ -O3 -march=native -shared -fPIC core.cpp -o core.so \
     `python3 -m pybind11 --includes` \
     `python3-config --includes --ldflags`
-
-# Ou use setup.py
-python setup.py build_ext --inplace
-```
-
-## 🚨 Alertas Telegram
-
-Horaculo envia alertas automáticos quando:
-- EDEN SIGNAL detectado
-- Intensidade de conflito > 0.6
-- Coordenação suspeita > 0.8
-
-Configure:
-```python
-export TELEGRAM_BOT_TOKEN="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-export TELEGRAM_CHAT_ID="123456789"
-```
-
-## 📈 Performance
-
-- **Latência:** ~1.4s por query (10 fontes)
-- **Memória:** ~150MB (sqlite in-memory) / ~500MB (postgres)
-- **CPU:** Single-threaded, otimizado com AVX2
-- **Throughput:** ~100 queries/min em máquina padrão
-
-## 🔐 Segurança
-
-- ✅ Sem API key hardcoded (env vars)
-- ✅ SQLite com WAL mode (crash-safe)
-- ✅ Validação de embeddings (NaN checks)
-- ✅ Rate limiting em NewsAPI (60/min free)
-
-## 📚 Como Contribuir
-
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/xyz`)
-3. Commit (`git commit -m 'Add xyz'`)
-4. Push (`git push origin feature/xyz`)
-5. Abra um PR
-
-## 🙋 Suporte
-
-- **Docs:** [Documentação Completa](./docs/README.md)
-- **Issues:** GitHub Issues
-  
-
-## 📝 Licença
-
-MIT License — Use livremente em projetos comerciais e open source.
-
-## 🎓 Inspiração
-
-Horaculo é baseado em pesquisa de:
-- Detecção de fake news (Stanford News Lab)
-- Análise de sentimento em mercados financeiros
-- Teoria da Psicologia do Mercado
-
-## 🌟 Roadmap
-
-- [ ] Suporte a múltiplas moedas (cripto + forex)
-- [ ] ML retraining automático (feedback dos sinais)
-- [ ] WebSocket para real-time streaming
-- [ ] Mobile app (React Native)
-- [ ] Integração com trading bots
-
----
-
-**Feito com ❤️ por [ANTÔNIO]**
-
-*"A verdade emerge quando observamos múltiplas perspectivas."*
-
+Limitations
+No labeled ground truth for coordination detection
+Entropy modeling is heuristic-based
+Embedding model selection impacts clustering quality
+NewsAPI rate limits apply
+Single-threaded C++ core
+Not intended as financial advice
+This project is intended for research and experimentation.
+Roadmap
+Multi-threaded similarity engine
+FAISS benchmarking comparison
+Streaming ingestion mode (WebSocket)
+Expanded asset coverage (crypto, forex)
+Automated retraining pipeline
+Contributing
+Fork the repository
+Create a branch (git checkout -b feature/xyz)
+Commit changes
+Open a pull request
+License
+MIT
